@@ -143,7 +143,7 @@ func (i *IPTun) StartTunnel(adapter TunnelAdapter) {
 	go func(done func()) {
 		defer done()
 		for {
-			ipPacket, err := i.ReadIPPacketFromTun(false)
+			ipPacket, err := i.ReadIPPacketFromTun(true)
 			if err != nil {
 				common.LogError(err)
 			}
