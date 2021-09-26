@@ -137,7 +137,7 @@ func StartIPTunnel(config *iptun.IPTunnelConfig) error {
 	// 在单独的协程里面不停的发送 Interest，保持已发出未满足的兴趣包数量在30个左右
 	go func() {
 		for {
-			if atomic.LoadInt64(&unSatisfiedInterestCount) < 30 {
+			if atomic.LoadInt64(&unSatisfiedInterestCount) < 100 {
 				sendInterest(ipTunnelConfig.TargetIdentifier)
 				atomic.AddInt64(&unSatisfiedInterestCount, 1)
 			} else {
