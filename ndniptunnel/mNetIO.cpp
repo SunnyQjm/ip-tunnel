@@ -34,7 +34,7 @@ int MNetIO::sendInterest(char *name) {
 			bind(&MNetIO::onNack, this, _1, _2),
 			bind(&MNetIO::onTimeout, this, _1));
 	mFace.removeAllPendingInterests();
-//	std::cout << "send interest : " << interestSeq << std::endl;
+	std::cout << "send interest : " << interestSeq << std::endl;
 
 	return 0 ;
 }
