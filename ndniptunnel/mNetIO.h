@@ -18,7 +18,8 @@ class MNetIO
 public:
 	MNetIO ();
 	~MNetIO ();
-	int sendInterest(char *buf, int size, char* name) ;
+	int sendInterest(char* name) ;
+    int sendData(char *buf, int size, char* name) ;
 	int start(char *prefix) ;
 
 private:

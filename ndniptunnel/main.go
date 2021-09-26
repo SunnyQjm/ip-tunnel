@@ -21,33 +21,69 @@ import (
 	"ip-tunnel/iptun/ndn"
 	"minlib/common"
 	"os"
-	"strconv"
+	"sync/atomic"
+	"time"
 	"unsafe"
 )
 
 var ipTun iptun.IPTun
 var adapter ndn.NDNTunnelAdapter
 
+// 一个队列，缓存TUN网卡收到的包
+var pktChan chan *iptun.IPPacket = make(chan *iptun.IPPacket, 10)
+var unSatisfiedInterestCount int64 = 0
+
 //export GoOnData
 func GoOnData(cstr *C.char, size C.int) {
 	//fmt.Println("GoOnData")
-}
-
-//export GoOnInterest
-func GoOnInterest(cstr *C.char, size C.int) {
-	// 接收到兴趣包，提取出其中携带的 IP 并传递给 adapter
+	// 收到 CPacket
 	data := C.GoBytes(unsafe.Pointer(cstr), size)
 	adapter.OnReceivePktFromNDN(&iptun.IPPacket{
 		Src:        waterutil.IPv4Source(data),
 		Dst:        waterutil.IPv4Destination(data),
 		RawPackets: data,
 	})
+	atomic.AddInt64(&unSatisfiedInterestCount, -1)
 }
 
+//export GoOnInterest
+func GoOnInterest(cstr *C.char) {
+	name := C.GoString(cstr)
+	// 接收到兴趣包，从缓存中取出一个IP包，封装到一个Data中发出
+	ipPacket := <-pktChan
+	sendData(ipPacket.RawPackets, name)
+}
+
+//export GoOnNack
+func GoOnNack() {
+	atomic.AddInt64(&unSatisfiedInterestCount, -1)
+}
+
+//export GoOnTimeout
+func GoOnTimeout() {
+	atomic.AddInt64(&unSatisfiedInterestCount, -1)
+}
+
+////int sendInterest(char *buf, int size, char *name) ;
+//func sendPacket(pkt []byte, name string) error {
+//	cstr := C.CString(name)
+//	C.sendInterest((*C.char)(unsafe.Pointer(&pkt[0])), C.int(len(pkt)), cstr)
+//	C.free(unsafe.Pointer(cstr))
+//	return nil
+//}
+
 //int sendInterest(char *buf, int size, char *name) ;
-func sendPacket(pkt []byte, name string) error {
+func sendInterest(name string) error {
 	cstr := C.CString(name)
-	C.sendInterest((*C.char)(unsafe.Pointer(&pkt[0])), C.int(len(pkt)), cstr)
+	C.sendInterest(cstr)
+	C.free(unsafe.Pointer(cstr))
+	return nil
+}
+
+//int sendData(char *buf, int size, char *name) ;
+func sendData(pkt []byte, name string) error {
+	cstr := C.CString(name)
+	C.sendData((*C.char)(unsafe.Pointer(&pkt[0])), C.int(len(pkt)), cstr)
 	C.free(unsafe.Pointer(cstr))
 	return nil
 }
@@ -69,14 +105,27 @@ func StartIPTunnel(ipTunnelConfig *iptun.IPTunnelConfig) error {
 	}
 	adapter.Init()
 
-	// 在单独的协程里面处理从TUN读取IP包，构造一个Interest并发出
+	// 在单独的协程里面处理从TUN读取IP包，构造一个Data并发出
 	go func() {
-		count := 0
+		//count := 0
 		for {
 			// 从 TUN 中读取IP包，并通过CPacket发出
 			ipPacket := adapter.GetPktFromTun()
-			sendPacket(ipPacket.RawPackets, ipTunnelConfig.TargetIdentifier+"/"+strconv.Itoa(count))
-			count++
+			pktChan <- ipPacket
+			//sendPacket(ipPacket.RawPackets, ipTunnelConfig.TargetIdentifier+"/"+strconv.Itoa(count))
+			//count++
+		}
+	}()
+
+	// 在单独的协程里面不停的发送 Interest，保持已发出未满足的兴趣包数量在30个左右
+	go func() {
+		for {
+			if atomic.LoadInt64(&unSatisfiedInterestCount) < 30 {
+				sendInterest(ipTunnelConfig.TargetIdentifier)
+			} else {
+				// 睡1ms
+				time.Sleep(time.Millisecond)
+			}
 		}
 	}()
 

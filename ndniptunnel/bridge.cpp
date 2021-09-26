@@ -13,9 +13,14 @@
 
 static MNetIO mNetIO ;
 
-int sendInterest(char *buf, int size, char *name){
-	return mNetIO.sendInterest(buf, size, name) ;
+int sendInterest(char *name){
+	return mNetIO.sendInterest(name) ;
 }
+
+int sendData(char *buf, int size, char *name) {
+    return mNetIO.sendData(buf, size, name);
+}
+
 int start(char *buf, int size){
 	char prefix[2000] ;
 	memcpy(prefix, buf, size) ;
