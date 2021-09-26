@@ -51,6 +51,7 @@ int MNetIO::sendData(char *buf, int size, char *name) {
     // Sign Data packet with default identity
     mKeyChain.sign(*data, si);
     mFace.put(*data);
+    return 0;
 }
 
 void MNetIO::onData(const Interest& interest, const Data& data){
@@ -93,7 +94,10 @@ void MNetIO::onInterest(const InterestFilter& filter, const Interest& interest){
 	//onInterest(buf, payloadSz) ;
 	string nameStr = interest.getName().toUri();
 //	memcpy(buf, nameStr.c_str(), nameStr.size());
-	GoOnInterest(nameStr.c_str());
+    char buf[9000];
+    memcpy(buf, nameStr.c_str(), nameStr.size());
+    buf[nameStr.size()] = '\0';
+	GoOnInterest(buf);
 
 //	// Create Data packet
 //    auto data = make_shared<Data>(interest.getName());
