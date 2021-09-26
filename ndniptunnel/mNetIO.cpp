@@ -101,7 +101,9 @@ void MNetIO::onInterest(const InterestFilter& filter, const Interest& interest){
     char buf[9000];
     memcpy(buf, nameStr.c_str(), nameStr.size());
     buf[nameStr.size()] = '\0';
+    std::cout << "before oninterest" << std::endl;
 	GoOnInterest(buf);
+    std::cout << "after oninterest" << std::endl;
 
 //	// Create Data packet
 //    auto data = make_shared<Data>(interest.getName());
