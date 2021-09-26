@@ -122,6 +122,7 @@ func StartIPTunnel(ipTunnelConfig *iptun.IPTunnelConfig) error {
 		for {
 			if atomic.LoadInt64(&unSatisfiedInterestCount) < 30 {
 				sendInterest(ipTunnelConfig.TargetIdentifier)
+				atomic.AddInt64(&unSatisfiedInterestCount, 1)
 			} else {
 				// 睡1ms
 				time.Sleep(time.Millisecond)
