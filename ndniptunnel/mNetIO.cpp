@@ -59,7 +59,7 @@ int MNetIO::sendData(char *buf, int size, char *name) {
 }
 
 void MNetIO::onData(const Interest& interest, const Data& data){
-//	std::cout << "onData : " << std::endl;
+	std::cout << "onData : " << std::endl;
     char buf[9000];
     if(data.getContent().value_size() <= 0) return ;
     int payloadSz = data.getContent().value_size();
