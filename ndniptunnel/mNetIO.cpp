@@ -34,7 +34,7 @@ int MNetIO::sendInterest(char *name) {
 			bind(&MNetIO::onData, this,  _1, _2),
 			bind(&MNetIO::onNack, this, _1, _2),
 			bind(&MNetIO::onTimeout, this, _1));
-	mFace.removeAllPendingInterests();
+//	mFace.removeAllPendingInterests();
 	std::cout << "send interest : " << interestName.toUri() << std::endl;
 
 	return 0 ;
