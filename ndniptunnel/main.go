@@ -57,6 +57,7 @@ func GoOnInterest(cstr *C.char) {
 		ipPacket := <-pktChan
 		sendData(ipPacket.RawPackets, name)
 	} else {
+		time.Sleep(time.Millisecond)
 		sendData(nil, name)
 	}
 }
