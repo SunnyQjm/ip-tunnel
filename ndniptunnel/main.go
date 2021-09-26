@@ -88,7 +88,11 @@ func sendInterest(name string) error {
 //int sendData(char *buf, int size, char *name) ;
 func sendData(pkt []byte, name string) error {
 	cstr := C.CString(name)
-	C.sendData((*C.char)(unsafe.Pointer(&pkt[0])), C.int(len(pkt)), cstr)
+	if pkt == nil {
+		C.sendData((*C.char)(unsafe.Pointer(nil)), C.int(0), cstr)
+	} else {
+		C.sendData((*C.char)(unsafe.Pointer(&pkt[0])), C.int(len(pkt)), cstr)
+	}
 	C.free(unsafe.Pointer(cstr))
 	return nil
 }

@@ -46,7 +46,9 @@ int MNetIO::sendData(char *buf, int size, char *name) {
     // Create Data packet
     auto data = make_shared<Data>(dataName);
     data->setFreshnessPeriod(0_s);
-    data->setContent(reinterpret_cast<const uint8_t *>(buf), size);
+    if (size > 0) {
+        data->setContent(reinterpret_cast<const uint8_t *>(buf), size);
+    }
 
     string dsha = "id:/localhost/identity/digest-sha256";
     ndn::security::SigningInfo si(dsha);
