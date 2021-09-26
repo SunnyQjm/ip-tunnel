@@ -26,7 +26,7 @@ int MNetIO::sendInterest(char *name) {
 	Name interestName(myName) ;
 //	interestName.appendSequenceNumber(interestSeq++);
 	Interest interest(interestName);
-	interest.setInterestLifetime(4_s);
+	interest.setInterestLifetime(1_s);
 //	interest.setMustBeFresh(true);
 //	interest.setApplicationParameters((const uint8_t*)buf, size);
 //	mKeyChain.sign(interest) ;
@@ -35,14 +35,14 @@ int MNetIO::sendInterest(char *name) {
 			bind(&MNetIO::onNack, this, _1, _2),
 			bind(&MNetIO::onTimeout, this, _1));
 //	mFace.removeAllPendingInterests();
-	std::cout << "send interest : " << interestName.toUri() << std::endl;
+//	std::cout << "send interest : " << interestName.toUri() << std::endl;
 
 	return 0 ;
 }
 
 int MNetIO::sendData(char *buf, int size, char *name) {
     Name dataName(name);
-    std::cout << "send data : " << dataName.toUri() << std::endl;
+//    std::cout << "send data : " << dataName.toUri() << std::endl;
     // Create Data packet
     auto data = make_shared<Data>(dataName);
     data->setFreshnessPeriod(0_s);
@@ -69,13 +69,13 @@ void MNetIO::onData(const Interest& interest, const Data& data){
 }
 
 void MNetIO::onNack(const Interest& interest, const lp::Nack& nack){
-	std::cout << "onNack : " << nack.getReason()  << std::endl;
+//	std::cout << "onNack : " << nack.getReason()  << std::endl;
     GoOnNack();
 }
 
 
 void MNetIO::onTimeout(const Interest& interest){
-	std::cout << "onTimeout : " << interest  << std::endl;
+//	std::cout << "onTimeout : " << interest  << std::endl;
     GoOnTimeout();
 }
 
@@ -101,9 +101,9 @@ void MNetIO::onInterest(const InterestFilter& filter, const Interest& interest){
     char buf[9000];
     memcpy(buf, nameStr.c_str(), nameStr.size());
     buf[nameStr.size()] = '\0';
-    std::cout << "before oninterest" << std::endl;
+//    std::cout << "before oninterest" << std::endl;
 	GoOnInterest(buf);
-    std::cout << "after oninterest" << std::endl;
+//    std::cout << "after oninterest" << std::endl;
 
 //	// Create Data packet
 //    auto data = make_shared<Data>(interest.getName());
