@@ -22,9 +22,9 @@ MNetIO::~MNetIO (){
 
 int MNetIO::sendInterest(char *name) {
 	static uint64_t interestSeq = 0;
-	string myName = string(name) + to_string(interestSeq);
+	string myName = string(name) + "/" + to_string(interestSeq);
 	Name interestName(myName) ;
-	interestName.appendSequenceNumber(interestSeq++);
+//	interestName.appendSequenceNumber(interestSeq++);
 	Interest interest(interestName);
 	interest.setInterestLifetime(4_s);
 //	interest.setMustBeFresh(true);
