@@ -133,7 +133,6 @@ func StartIPTunnel(ipTunnelConfig *iptun.IPTunnelConfig) error {
 				sendInterest(ipTunnelConfig.TargetIdentifier)
 				atomic.AddInt64(&unSatisfiedInterestCount, 1)
 			} else {
-				break
 				// 睡1ms
 				time.Sleep(time.Millisecond)
 			}
