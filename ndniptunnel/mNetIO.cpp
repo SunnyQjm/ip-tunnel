@@ -39,7 +39,7 @@ int MNetIO::sendInterest(char *name) {
 	return 0 ;
 }
 
-int MNetIO:sendData(char *buf, int size, char *name) {
+int MNetIO::sendData(char *buf, int size, char *name) {
     Name dataName(name);
     // Create Data packet
     auto data = make_shared<Data>(dataName);
@@ -91,7 +91,7 @@ void MNetIO::onInterest(const InterestFilter& filter, const Interest& interest){
 //	memcpy(buf, interest.getApplicationParameters().value(), payloadSz);
 //	string tmp(buf, payloadSz) ;
 	//onInterest(buf, payloadSz) ;
-//	nameStr = interest.getName().toUri();
+	string nameStr = interest.getName().toUri();
 //	memcpy(buf, nameStr.c_str(), nameStr.size());
 	GoOnInterest(nameStr.c_str());
 
