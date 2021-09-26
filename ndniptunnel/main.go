@@ -56,6 +56,8 @@ func GoOnInterest(cstr *C.char) {
 	if len(pktChan) > 0 {
 		ipPacket := <-pktChan
 		sendData(ipPacket.RawPackets, name)
+	} else {
+		sendData(nil, name)
 	}
 }
 
