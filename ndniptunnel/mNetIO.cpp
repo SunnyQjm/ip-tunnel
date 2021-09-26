@@ -41,6 +41,7 @@ int MNetIO::sendInterest(char *name) {
 
 int MNetIO::sendData(char *buf, int size, char *name) {
     Name dataName(name);
+    std::cout << "send data : " << dataName.toUri() << std::endl;
     // Create Data packet
     auto data = make_shared<Data>(dataName);
     data->setFreshnessPeriod(0_s);
