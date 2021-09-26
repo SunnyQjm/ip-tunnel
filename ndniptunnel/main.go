@@ -38,12 +38,14 @@ var unSatisfiedInterestCount int64 = 0
 func GoOnData(cstr *C.char, size C.int) {
 	//fmt.Println("GoOnData")
 	// 收到 CPacket
-	data := C.GoBytes(unsafe.Pointer(cstr), size)
-	adapter.OnReceivePktFromNDN(&iptun.IPPacket{
-		Src:        waterutil.IPv4Source(data),
-		Dst:        waterutil.IPv4Destination(data),
-		RawPackets: data,
-	})
+	if size > 0 {
+		data := C.GoBytes(unsafe.Pointer(cstr), size)
+		adapter.OnReceivePktFromNDN(&iptun.IPPacket{
+			Src:        waterutil.IPv4Source(data),
+			Dst:        waterutil.IPv4Destination(data),
+			RawPackets: data,
+		})
+	}
 	sendInterest(ipTunnelConfig.TargetIdentifier)
 	//atomic.AddInt64(&unSatisfiedInterestCount, -1)
 }

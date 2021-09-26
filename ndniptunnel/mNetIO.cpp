@@ -61,11 +61,14 @@ int MNetIO::sendData(char *buf, int size, char *name) {
 void MNetIO::onData(const Interest& interest, const Data& data){
 //	std::cout << "onData : " << std::endl;
     char buf[9000];
-    if(data.getContent().value_size() <= 0) return ;
-    int payloadSz = data.getContent().value_size();
-    memcpy(buf, data.getContent().value(), payloadSz);
-    string tmp(buf, payloadSz) ;
-    GoOnData(buf, payloadSz);
+    if(data.getContent().value_size() <= 0){
+        GoOnData(buf, 0);
+    } else {
+        int payloadSz = data.getContent().value_size();
+        memcpy(buf, data.getContent().value(), payloadSz);
+        string tmp(buf, payloadSz) ;
+        GoOnData(buf, payloadSz);
+    }
 }
 
 void MNetIO::onNack(const Interest& interest, const lp::Nack& nack){
