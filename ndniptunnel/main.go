@@ -28,6 +28,7 @@ import (
 
 var ipTun iptun.IPTun
 var adapter ndn.NDNTunnelAdapter
+var ipTunnelConfig *iptun.IPTunnelConfig
 
 // 一个队列，缓存TUN网卡收到的包
 var pktChan chan *iptun.IPPacket = make(chan *iptun.IPPacket, 10)
@@ -43,7 +44,8 @@ func GoOnData(cstr *C.char, size C.int) {
 		Dst:        waterutil.IPv4Destination(data),
 		RawPackets: data,
 	})
-	atomic.AddInt64(&unSatisfiedInterestCount, -1)
+	sendInterest(ipTunnelConfig.TargetIdentifier)
+	//atomic.AddInt64(&unSatisfiedInterestCount, -1)
 }
 
 //export GoOnInterest
@@ -59,12 +61,14 @@ func GoOnInterest(cstr *C.char) {
 
 //export GoOnNack
 func GoOnNack() {
-	atomic.AddInt64(&unSatisfiedInterestCount, -1)
+	//atomic.AddInt64(&unSatisfiedInterestCount, -1)
+	sendInterest(ipTunnelConfig.TargetIdentifier)
 }
 
 //export GoOnTimeout
 func GoOnTimeout() {
-	atomic.AddInt64(&unSatisfiedInterestCount, -1)
+	//atomic.AddInt64(&unSatisfiedInterestCount, -1)
+	sendInterest(ipTunnelConfig.TargetIdentifier)
 }
 
 ////int sendInterest(char *buf, int size, char *name) ;
@@ -100,7 +104,8 @@ func sendData(pkt []byte, name string) error {
 // @Description:
 // @param ipTunnelConfig
 //
-func StartIPTunnel(ipTunnelConfig *iptun.IPTunnelConfig) error {
+func StartIPTunnel(config *iptun.IPTunnelConfig) error {
+	ipTunnelConfig = config
 	if err := ipTun.Init(iptun.Config{
 		InterfaceName: ipTunnelConfig.TunConfig.InterfaceName,
 		IPv4Addr:      ipTunnelConfig.TunConfig.IPv4Addr,
@@ -131,6 +136,7 @@ func StartIPTunnel(ipTunnelConfig *iptun.IPTunnelConfig) error {
 				sendInterest(ipTunnelConfig.TargetIdentifier)
 				atomic.AddInt64(&unSatisfiedInterestCount, 1)
 			} else {
+				break
 				// 睡1ms
 				time.Sleep(time.Millisecond)
 			}
