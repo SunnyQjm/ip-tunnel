@@ -69,13 +69,13 @@ void MNetIO::onData(const Interest& interest, const Data& data){
 }
 
 void MNetIO::onNack(const Interest& interest, const lp::Nack& nack){
-//	std::cout << "onNack : " << nack.getReason()  << std::endl;
+	std::cout << "onNack : " << nack.getReason()  << std::endl;
     GoOnNack();
 }
 
 
 void MNetIO::onTimeout(const Interest& interest){
-//	std::cout << "onTimeout : " << interest  << std::endl;
+	std::cout << "onTimeout : " << interest  << std::endl;
     GoOnTimeout();
 }
 
