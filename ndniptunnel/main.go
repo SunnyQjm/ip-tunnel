@@ -51,8 +51,12 @@ func GoOnInterest(cstr *C.char) {
 	name := C.GoString(cstr)
 	common.LogWarn("onInterest: ", name)
 	// 接收到兴趣包，从缓存中取出一个IP包，封装到一个Data中发出
-	ipPacket := <-pktChan
-	sendData(ipPacket.RawPackets, name)
+	if len(pktChan) > 0 {
+		ipPacket := <-pktChan
+		sendData(ipPacket.RawPackets, name)
+	} else {
+		sendData(nil, name)
+	}
 }
 
 //export GoOnNack
