@@ -19,7 +19,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"ip-tunnel/iptun"
 	"ip-tunnel/iptun/ndn"
-	"minlib/common"
+	"log"
 	"os"
 	"sync/atomic"
 	"time"
@@ -155,7 +155,7 @@ func StartIPTunnel(config *iptun.IPTunnelConfig) error {
 		ret := C.start(cstr, C.int(len(ipTunnelConfig.MirConfig.ListenIdentifier)))
 		C.free(unsafe.Pointer(cstr))
 		if ret < 0 {
-			common.LogFatal("start face fail")
+			log.Fatal("start face fail")
 		}
 	}()
 	// 启动IP隧道程序
@@ -182,14 +182,14 @@ func main() {
 	mirApp.Action = func(context *cli.Context) error {
 		ipTunnelConfig, err := iptun.ParseConfig(configFilePath)
 		if err != nil {
-			common.LogFatal(err)
+			log.Fatal(err)
 		}
 
 		// 初始化日志模块
-		var loggerParameters common.LoggerParameters
-		loggerParameters.LogLevel = ipTunnelConfig.LogConfig.LogLevel
-		loggerParameters.ReportCaller = true
-		common.InitLogger(&loggerParameters)
+		//var loggerParameters common.LoggerParameters
+		//loggerParameters.LogLevel = ipTunnelConfig.LogConfig.LogLevel
+		//loggerParameters.ReportCaller = true
+		//common.InitLogger(&loggerParameters)
 		return StartIPTunnel(ipTunnelConfig)
 	}
 
