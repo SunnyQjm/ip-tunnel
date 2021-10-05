@@ -62,8 +62,8 @@ func (M *MINTunnelAdapter) Init(config *iptun.IPTunnelConfig) error {
 // OnReceiveIPPktFromTun 处理从TUN网卡接收到的IP包
 //
 // @Description:
-//	1. 生成一个 CPacket，将IP包放进去
-//	2. 然后将 CPacket 发出即可
+//	1. 生成一个 UPPkt，将IP包放进去
+//	2. 然后将 UPPkt 发出即可
 // @receiver M
 // @param packet
 //
@@ -77,22 +77,22 @@ func (M *MINTunnelAdapter) OnReceiveIPPktFromTun(ipPacket *iptun.IPPacket) error
 		return err
 	}
 
-	// 在这边构造CPacket发出
-	cPacket := new(packet.CPacket)
-	cPacket.SetTtl(5)
-	cPacket.SetSrcIdentifier(srcIdentifier)
-	cPacket.SetDstIdentifier(dstIdentifier)
-	cPacket.Payload.SetValue(ipPacket.RawPackets)
+	// 在这边构造UPPkt发出
+	uPPkt := new(packet.UPPkt)
+	uPPkt.SetTtl(5)
+	uPPkt.SetSrcIdentifier(srcIdentifier)
+	uPPkt.SetDstIdentifier(dstIdentifier)
+	uPPkt.Payload.SetValue(ipPacket.RawPackets)
 
 	common.LogDebug(fmt.Sprintf("Packet Received: %v -> %v \t %x\n", ipPacket.Src.String(), ipPacket.Dst.String(),
 		ipPacket.RawPackets))
-	if err := M.logicFace.SendCPacket(cPacket); err != nil {
+	if err := M.logicFace.SendUPPkt(uPPkt); err != nil {
 		return err
 	}
 	return nil
 }
 
-// ReadIPPkt 从MIN网络中接收携带 IP 包的 CPacket，并
+// ReadIPPkt 从MIN网络中接收携带 IP 包的 UPPkt，并
 //
 // @Description:
 // @receiver M
@@ -100,17 +100,17 @@ func (M *MINTunnelAdapter) OnReceiveIPPktFromTun(ipPacket *iptun.IPPacket) error
 // @return error
 //
 func (M *MINTunnelAdapter) ReadIPPkt() (*iptun.IPPacket, error) {
-	cPacket, err := M.logicFace.ReceiveCPacket(4000)
+	uPPkt, err := M.logicFace.ReceiveUPPkt(4000)
 	if err != nil {
 		return nil, err
 	} else {
-		common.LogDebug(fmt.Sprintf("Write %d bytes, %s -> %s, %x", len(cPacket.Payload.GetValue()),
-			waterutil.IPv4Source(cPacket.Payload.GetValue()),
-			waterutil.IPv4Destination(cPacket.Payload.GetValue()), cPacket.Payload.GetValue()))
+		common.LogDebug(fmt.Sprintf("Write %d bytes, %s -> %s, %x", len(uPPkt.Payload.GetValue()),
+			waterutil.IPv4Source(uPPkt.Payload.GetValue()),
+			waterutil.IPv4Destination(uPPkt.Payload.GetValue()), uPPkt.Payload.GetValue()))
 	}
 	return &iptun.IPPacket{
-		Src:        waterutil.IPv4Source(cPacket.Payload.GetValue()),
-		Dst:        waterutil.IPv4Destination(cPacket.Payload.GetValue()),
-		RawPackets: cPacket.Payload.GetValue(),
+		Src:        waterutil.IPv4Source(uPPkt.Payload.GetValue()),
+		Dst:        waterutil.IPv4Destination(uPPkt.Payload.GetValue()),
+		RawPackets: uPPkt.Payload.GetValue(),
 	}, nil
 }
