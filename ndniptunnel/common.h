@@ -16,7 +16,9 @@ extern "C" {
 
 //void OnData(char*);
 void GoOnData(char *buf, int size) ;
-void GoOnInterest(char *buf, int size) ;
+void GoOnInterest(char *name) ;
+void GoOnTimeout();
+void GoOnNack();
 
 #ifdef __cplusplus
 }

@@ -19,35 +19,87 @@ import (
 	"github.com/urfave/cli/v2"
 	"ip-tunnel/iptun"
 	"ip-tunnel/iptun/ndn"
-	"minlib/common"
+	"log"
 	"os"
-	"strconv"
+	"sync/atomic"
+	"time"
 	"unsafe"
 )
 
 var ipTun iptun.IPTun
 var adapter ndn.NDNTunnelAdapter
+var ipTunnelConfig *iptun.IPTunnelConfig
+
+// 一个队列，缓存TUN网卡收到的包
+var pktChan chan *iptun.IPPacket = make(chan *iptun.IPPacket, 10)
+var unSatisfiedInterestCount int64 = 0
 
 //export GoOnData
 func GoOnData(cstr *C.char, size C.int) {
 	//fmt.Println("GoOnData")
+	// 收到 UPPkt
+	if size > 0 {
+		data := C.GoBytes(unsafe.Pointer(cstr), size)
+		adapter.OnReceivePktFromNDN(&iptun.IPPacket{
+			Src:        waterutil.IPv4Source(data),
+			Dst:        waterutil.IPv4Destination(data),
+			RawPackets: data,
+		})
+	}
+	sendInterest(ipTunnelConfig.TargetIdentifier)
+	//atomic.AddInt64(&unSatisfiedInterestCount, -1)
 }
 
 //export GoOnInterest
-func GoOnInterest(cstr *C.char, size C.int) {
-	// 接收到兴趣包，提取出其中携带的 IP 并传递给 adapter
-	data := C.GoBytes(unsafe.Pointer(cstr), size)
-	adapter.OnReceivePktFromNDN(&iptun.IPPacket{
-		Src:        waterutil.IPv4Source(data),
-		Dst:        waterutil.IPv4Destination(data),
-		RawPackets: data,
-	})
+func GoOnInterest(cstr *C.char) {
+	name := C.GoString(cstr)
+	//common.LogWarn("onInterest: ", name)
+	// 接收到兴趣包，从缓存中取出一个IP包，封装到一个Data中发出
+	if len(pktChan) > 0 {
+		ipPacket := <-pktChan
+		sendData(ipPacket.RawPackets, name)
+	} else {
+		//time.Sleep(10 * time.Millisecond)
+		sendData(nil, name)
+	}
 }
 
+//export GoOnNack
+func GoOnNack() {
+	//atomic.AddInt64(&unSatisfiedInterestCount, -1)
+	sendInterest(ipTunnelConfig.TargetIdentifier)
+}
+
+//export GoOnTimeout
+func GoOnTimeout() {
+	//atomic.AddInt64(&unSatisfiedInterestCount, -1)
+	sendInterest(ipTunnelConfig.TargetIdentifier)
+}
+
+////int sendInterest(char *buf, int size, char *name) ;
+//func sendPacket(pkt []byte, name string) error {
+//	cstr := C.CString(name)
+//	C.sendInterest((*C.char)(unsafe.Pointer(&pkt[0])), C.int(len(pkt)), cstr)
+//	C.free(unsafe.Pointer(cstr))
+//	return nil
+//}
+
 //int sendInterest(char *buf, int size, char *name) ;
-func sendPacket(pkt []byte, name string) error {
+func sendInterest(name string) error {
 	cstr := C.CString(name)
-	C.sendInterest((*C.char)(unsafe.Pointer(&pkt[0])), C.int(len(pkt)), cstr)
+	C.sendInterest(cstr)
+	C.free(unsafe.Pointer(cstr))
+	return nil
+}
+
+//int sendData(char *buf, int size, char *name) ;
+func sendData(pkt []byte, name string) error {
+	cstr := C.CString(name)
+	if pkt == nil {
+		C.sendData((*C.char)(unsafe.Pointer(nil)), C.int(0), cstr)
+	} else {
+		C.sendData((*C.char)(unsafe.Pointer(&pkt[0])), C.int(len(pkt)), cstr)
+	}
 	C.free(unsafe.Pointer(cstr))
 	return nil
 }
@@ -57,7 +109,8 @@ func sendPacket(pkt []byte, name string) error {
 // @Description:
 // @param ipTunnelConfig
 //
-func StartIPTunnel(ipTunnelConfig *iptun.IPTunnelConfig) error {
+func StartIPTunnel(config *iptun.IPTunnelConfig) error {
+	ipTunnelConfig = config
 	if err := ipTun.Init(iptun.Config{
 		InterfaceName: ipTunnelConfig.TunConfig.InterfaceName,
 		IPv4Addr:      ipTunnelConfig.TunConfig.IPv4Addr,
@@ -69,14 +122,30 @@ func StartIPTunnel(ipTunnelConfig *iptun.IPTunnelConfig) error {
 	}
 	adapter.Init()
 
-	// 在单独的协程里面处理从TUN读取IP包，构造一个Interest并发出
+	// 在单独的协程里面处理从TUN读取IP包，构造一个Data并发出
 	go func() {
-		count := 0
+		//count := 0
 		for {
-			// 从 TUN 中读取IP包，并通过CPacket发出
+			// 从 TUN 中读取IP包，并通过UPPkt发出
 			ipPacket := adapter.GetPktFromTun()
-			sendPacket(ipPacket.RawPackets, ipTunnelConfig.TargetIdentifier+"/"+strconv.Itoa(count))
-			count++
+			pktChan <- ipPacket
+			//sendPacket(ipPacket.RawPackets, ipTunnelConfig.TargetIdentifier+"/"+strconv.Itoa(count))
+			//count++
+		}
+	}()
+
+	// 在单独的协程里面不停的发送 Interest，保持已发出未满足的兴趣包数量在30个左右
+	go func() {
+		time.Sleep(5 * time.Second)
+		for {
+			if atomic.LoadInt64(&unSatisfiedInterestCount) < 30 {
+				sendInterest(ipTunnelConfig.TargetIdentifier)
+				atomic.AddInt64(&unSatisfiedInterestCount, 1)
+			} else {
+				break
+				// 睡1ms
+				time.Sleep(time.Millisecond)
+			}
 		}
 	}()
 
@@ -86,7 +155,7 @@ func StartIPTunnel(ipTunnelConfig *iptun.IPTunnelConfig) error {
 		ret := C.start(cstr, C.int(len(ipTunnelConfig.MirConfig.ListenIdentifier)))
 		C.free(unsafe.Pointer(cstr))
 		if ret < 0 {
-			common.LogFatal("start face fail")
+			log.Fatal("start face fail")
 		}
 	}()
 	// 启动IP隧道程序
@@ -113,14 +182,14 @@ func main() {
 	mirApp.Action = func(context *cli.Context) error {
 		ipTunnelConfig, err := iptun.ParseConfig(configFilePath)
 		if err != nil {
-			common.LogFatal(err)
+			log.Fatal(err)
 		}
 
 		// 初始化日志模块
-		var loggerParameters common.LoggerParameters
-		loggerParameters.LogLevel = ipTunnelConfig.LogConfig.LogLevel
-		loggerParameters.ReportCaller = true
-		common.InitLogger(&loggerParameters)
+		//var loggerParameters common.LoggerParameters
+		//loggerParameters.LogLevel = ipTunnelConfig.LogConfig.LogLevel
+		//loggerParameters.ReportCaller = true
+		//common.InitLogger(&loggerParameters)
 		return StartIPTunnel(ipTunnelConfig)
 	}
 

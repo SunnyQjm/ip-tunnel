@@ -12,7 +12,8 @@
 extern "C" {
 #endif
 
-int sendInterest(char *buf, int size, char *name) ;
+int sendInterest(char *name) ;
+int sendData(char *buf, int size, char *name) ;
 int start(char *buf, int size) ;
 
 
