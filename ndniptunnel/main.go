@@ -37,7 +37,7 @@ var unSatisfiedInterestCount int64 = 0
 //export GoOnData
 func GoOnData(cstr *C.char, size C.int) {
 	//fmt.Println("GoOnData")
-	// 收到 UPPkt
+	// 收到 GPPkt
 	if size > 0 {
 		data := C.GoBytes(unsafe.Pointer(cstr), size)
 		adapter.OnReceivePktFromNDN(&iptun.IPPacket{
@@ -126,7 +126,7 @@ func StartIPTunnel(config *iptun.IPTunnelConfig) error {
 	go func() {
 		//count := 0
 		for {
-			// 从 TUN 中读取IP包，并通过UPPkt发出
+			// 从 TUN 中读取IP包，并通过GPPkt发出
 			ipPacket := adapter.GetPktFromTun()
 			pktChan <- ipPacket
 			//sendPacket(ipPacket.RawPackets, ipTunnelConfig.TargetIdentifier+"/"+strconv.Itoa(count))

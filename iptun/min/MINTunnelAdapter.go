@@ -52,7 +52,7 @@ func (M *MINTunnelAdapter) Init(config *iptun.IPTunnelConfig) error {
 	if listenIdentifier, err := component.CreateIdentifierByString(config.MirConfig.ListenIdentifier); err != nil {
 		return err
 	} else {
-		if err := M.logicFace.RegisterIdentifier(listenIdentifier, 1000); err != nil {
+		if err := M.logicFace.RegisterPushIdentifier(listenIdentifier, 1000); err != nil {
 			return err
 		}
 	}
@@ -62,8 +62,8 @@ func (M *MINTunnelAdapter) Init(config *iptun.IPTunnelConfig) error {
 // OnReceiveIPPktFromTun 处理从TUN网卡接收到的IP包
 //
 // @Description:
-//	1. 生成一个 UPPkt，将IP包放进去
-//	2. 然后将 UPPkt 发出即可
+//	1. 生成一个 GPPkt，将IP包放进去
+//	2. 然后将 GPPkt 发出即可
 // @receiver M
 // @param packet
 //
@@ -77,22 +77,22 @@ func (M *MINTunnelAdapter) OnReceiveIPPktFromTun(ipPacket *iptun.IPPacket) error
 		return err
 	}
 
-	// 在这边构造UPPkt发出
-	uPPkt := new(packet.UPPkt)
-	uPPkt.SetTtl(5)
-	uPPkt.SetSrcIdentifier(srcIdentifier)
-	uPPkt.SetDstIdentifier(dstIdentifier)
-	uPPkt.Payload.SetValue(ipPacket.RawPackets)
+	// 在这边构造GPPkt发出
+	gPPkt := new(packet.GPPkt)
+	gPPkt.SetTtl(5)
+	gPPkt.SetSrcIdentifier(srcIdentifier)
+	gPPkt.SetDstIdentifier(dstIdentifier)
+	gPPkt.Payload.SetValue(ipPacket.RawPackets)
 
 	common.LogDebug(fmt.Sprintf("Packet Received: %v -> %v \t %x\n", ipPacket.Src.String(), ipPacket.Dst.String(),
 		ipPacket.RawPackets))
-	if err := M.logicFace.SendUPPkt(uPPkt); err != nil {
+	if err := M.logicFace.SendGPPkt(gPPkt); err != nil {
 		return err
 	}
 	return nil
 }
 
-// ReadIPPkt 从MIN网络中接收携带 IP 包的 UPPkt，并
+// ReadIPPkt 从MIN网络中接收携带 IP 包的 GPPkt，并
 //
 // @Description:
 // @receiver M
@@ -100,17 +100,17 @@ func (M *MINTunnelAdapter) OnReceiveIPPktFromTun(ipPacket *iptun.IPPacket) error
 // @return error
 //
 func (M *MINTunnelAdapter) ReadIPPkt() (*iptun.IPPacket, error) {
-	uPPkt, err := M.logicFace.ReceiveUPPkt(4000)
+	gPPkt, err := M.logicFace.ReceiveGPPkt(4000)
 	if err != nil {
 		return nil, err
 	} else {
-		common.LogDebug(fmt.Sprintf("Write %d bytes, %s -> %s, %x", len(uPPkt.Payload.GetValue()),
-			waterutil.IPv4Source(uPPkt.Payload.GetValue()),
-			waterutil.IPv4Destination(uPPkt.Payload.GetValue()), uPPkt.Payload.GetValue()))
+		common.LogDebug(fmt.Sprintf("Write %d bytes, %s -> %s, %x", len(gPPkt.Payload.GetValue()),
+			waterutil.IPv4Source(gPPkt.Payload.GetValue()),
+			waterutil.IPv4Destination(gPPkt.Payload.GetValue()), gPPkt.Payload.GetValue()))
 	}
 	return &iptun.IPPacket{
-		Src:        waterutil.IPv4Source(uPPkt.Payload.GetValue()),
-		Dst:        waterutil.IPv4Destination(uPPkt.Payload.GetValue()),
-		RawPackets: uPPkt.Payload.GetValue(),
+		Src:        waterutil.IPv4Source(gPPkt.Payload.GetValue()),
+		Dst:        waterutil.IPv4Destination(gPPkt.Payload.GetValue()),
+		RawPackets: gPPkt.Payload.GetValue(),
 	}, nil
 }

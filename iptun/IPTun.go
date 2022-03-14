@@ -153,7 +153,7 @@ func (i *IPTun) StartTunnel(adapter TunnelAdapter) {
 		}
 	}(wg.Done)
 
-	// 在单独的协程里面接收UPPkt，并从中提取出 IP 包写入到TUN当中
+	// 在单独的协程里面接收GPPkt，并从中提取出 IP 包写入到TUN当中
 	go func(done func()) {
 		defer wg.Done()
 		for {
