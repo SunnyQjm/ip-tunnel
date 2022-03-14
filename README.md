@@ -27,7 +27,7 @@ We should config three Linux servers, each server running a Ubuntu 20.04 operati
 - Linux Server 1:
 
   ```bash
-  git clone https://gitea.qjm253.cn/SunnyQjm/NDNInstaller.git
+  git clone https://github.com/SunnyQjm/NDNInstaller.git
   cd NDNInstaller
   ./install_ndn-cxx.sh
   ./install_nfd.sh
@@ -37,7 +37,7 @@ We should config three Linux servers, each server running a Ubuntu 20.04 operati
 - Linux Server 2:
 
   ```bash
-  git clone https://gitea.qjm253.cn/SunnyQjm/NDNInstaller.git
+  git clone https://github.com/SunnyQjm/NDNInstaller.git
   cd NDNInstaller
   ./install_ndn-cxx.sh
   ./install_nfd.sh
@@ -47,7 +47,7 @@ We should config three Linux servers, each server running a Ubuntu 20.04 operati
 - Linux Server 3:
 
   ```bash
-  git clone https://gitea.qjm253.cn/SunnyQjm/NDNInstaller.git
+  git clone https://github.com/SunnyQjm/NDNInstaller.git
   cd NDNInstaller
   ./install_ndn-cxx.sh
   ./install_nfd.sh
